@@ -20,6 +20,7 @@ class AnalyzerCapabilities {
 	get supportsClosingLabels() { return versionIsAtLeast(this.version, "1.18.4"); }
 	get supportsGetDeclerations() { return versionIsAtLeast(this.version, "1.18.7"); }
 	get supportsGetDeclerationsForFile() { return versionIsAtLeast(this.version, "1.19.0"); }
+	get supportsFlutterOutline() { return versionIsAtLeast(this.version, "1.19.0"); }
 }
 
 export class Analyzer extends AnalyzerGen {
