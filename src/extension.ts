@@ -50,6 +50,7 @@ const HTML_MODE: vs.DocumentFilter[] = [{ language: "html", scheme: "file" }];
 const DART_PROJECT_LOADED = "dart-code:dartProjectLoaded";
 const FLUTTER_PROJECT_LOADED = "dart-code:flutterProjectLoaded";
 export const SERVICE_EXTENSION_CONTEXT_PREFIX = "dart-code:serviceExtension.";
+export let extensionPath: string = null;
 
 let analyzer: Analyzer;
 let flutterDaemon: FlutterDaemon;
@@ -62,6 +63,7 @@ let analyzerSettings: string = getAnalyzerSettings();
 
 export function activate(context: vs.ExtensionContext) {
 	const analysisCompleteCompleter = new PromiseCompleter<void>();
+	extensionPath = context.extensionPath;
 	const extensionStartTime = new Date();
 	const sdks = util.findSdks();
 	analytics = new Analytics(sdks);
