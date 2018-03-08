@@ -46,6 +46,7 @@ class Config {
 	// Preview features.
 	get previewDart2() { return this.getConfig<boolean>("previewDart2"); }
 	get previewAnalyzeAngularTemplates() { return this.getConfig<boolean>("previewAnalyzeAngularTemplates"); }
+	get previewFlutterOutline() { return this.getConfig<boolean>("previewFlutterOutline"); }
 
 	public for(uri: Uri): ResourceConfig {
 		return new ResourceConfig(uri, this.setConfig.bind(this));
