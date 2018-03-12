@@ -42,6 +42,20 @@
 			]
 		},
 		{
+			"name": "Flutter Test Debug Server",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceRoot}",
+			"program": "${workspaceRoot}/src/debug/flutter_test_debug_entry.ts",
+			"args": [
+				"--server=4711"
+			],
+			"sourceMaps": true,
+			"outFiles": [
+				"${workspaceRoot}/out/src/**/*.js"
+			]
+		},
+		{
 			"name": "Launch Tests (Multi-root)",
 			"type": "extensionHost",
 			"request": "launch",
@@ -127,6 +141,13 @@
 			"configurations": [
 				"Extension",
 				"Flutter Debug Server"
+			]
+		},
+		{
+			"name": "Extension + Flutter Test Debug Server",
+			"configurations": [
+				"Extension",
+				"Flutter Test Debug Server"
 			]
 		}
 	]
