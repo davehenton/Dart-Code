@@ -248,7 +248,7 @@ export class DartDebugSession extends DebugSession {
 				result.forEach((bp, i) => {
 					if (!bpResponse[i])
 						bpResponse.push({ verified: false });
-					if (bpResponse[i].verified) {
+					if (bp && bp.resolved) {
 						bpResponse[i].id = bp.breakpointNumber;
 						bpResponse[i].verified = true;
 
