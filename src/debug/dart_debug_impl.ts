@@ -12,8 +12,9 @@ import { PackageMap, uriToFilePath, PromiseCompleter, getLocalPackageName, isWin
 import {
 	ObservatoryConnection, VMEvent, VMIsolateRef, RPCError, DebuggerResult, VMStack, VMSentinel, VMObj,
 	VMFrame, VMFuncRef, VMInstanceRef, VMScriptRef, VMScript, VMSourceLocation, VMErrorRef, VMBreakpoint,
-	VMInstance, VMResponse, VMClassRef, VM, VMIsolate, VMLibraryRef, VMCodeRef,
+	VMInstance, VMResponse, VMClassRef, VM, VMIsolate, VMLibraryRef, VMCodeRef, VMUnresolvedSourceLocation,
 } from "./dart_debug_protocol";
+import { Location } from "vscode";
 
 // TODO: supportsSetVariable
 // TODO: class variables?
@@ -228,10 +229,10 @@ export class DartDebugSession extends DebugSession {
 		super.disconnectRequest(response, args);
 	}
 
-	protected setBreakPointsRequest(
+	protected async setBreakPointsRequest(
 		response: DebugProtocol.SetBreakpointsResponse,
 		args: DebugProtocol.SetBreakpointsArguments,
-	): void {
+	): Promise<void> {
 		const source: DebugProtocol.Source = args.source;
 		let breakpoints: DebugProtocol.SourceBreakpoint[] = args.breakpoints;
 		if (!breakpoints)
@@ -239,17 +240,47 @@ export class DartDebugSession extends DebugSession {
 
 		// Get all possible valid source uris for the given path.
 		const uris = this.getPossibleSourceUris(source.path);
+		const bpResponse: DebugProtocol.Breakpoint[] = [];
+		let lastError: Error = null;
 
-		uris.forEach((uri) => {
-			this.threadManager.setBreakpoints(uri, breakpoints).then((result: boolean[]) => {
-				const bpResponse = [];
-				for (const verified of result) {
-					bpResponse.push({ verified });
-				}
+		const sendBreakpoints = uris.map((uri) => {
+			return this.threadManager.setBreakpoints(uri, breakpoints).then((result: VMBreakpoint[]) => {
+				result.forEach((bp, i) => {
+					if (!bpResponse[i])
+						bpResponse.push({ verified: false });
+					if (bpResponse[i].verified) {
+						bpResponse[i].id = bp.breakpointNumber;
+						bpResponse[i].verified = true;
 
+						throw new Error("Unifinished!");
+						/*if (bp.location instanceof Location) {
+							const script = await thread.getScript(bp.location.script).then((script: VMScript)
+							const fileLocation: FileLocation = this.resolveFileLocation(script, location.tokenPos);
+							if (fileLocation) {
+								bpResponse[i].line = fileLocation.line;
+								bpResponse[i].column = fileLocation.column;
+							}
+							bpResponse[i].line = true;
+							bpResponse[i].column = true;
+							bpResponse[i].endLine = true;
+							bpResponse[i].endColumn = true;
+						} else if (bp.location instanceof VMUnresolvedSourceLocation) {
+							bpResponse[i].line = bp.location.;
+							bpResponse[i].column = true;
+						}
+*/
+					}
+				});
+			}).catch((error) => lastError = error);
+		});
+
+		Promise.all(sendBreakpoints).then(() => {
+			if (lastError) {
+				this.errorResponse(response, `${lastError}`);
+			} else {
 				response.body = { breakpoints: bpResponse };
 				this.sendResponse(response);
-			}).catch((error) => this.errorResponse(response, `${error}`));
+			}
 		});
 	}
 
@@ -882,7 +913,7 @@ class ThreadManager {
 	}
 
 	// Just resends existing breakpoints
-	public resetBreakpoints() {
+	public resetBreakpoints(): Promise<VMBreakpoint[][]> {
 		const promises = [];
 		for (const uri of Object.keys(this.bps)) {
 			promises.push(this.setBreakpoints(uri, this.bps[uri]));
@@ -890,7 +921,7 @@ class ThreadManager {
 		return Promise.all(promises);
 	}
 
-	public setBreakpoints(uri: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<boolean[]> {
+	public setBreakpoints(uri: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<VMBreakpoint[]> {
 		// Remember these bps for when new threads start.
 		if (breakpoints.length === 0)
 			delete this.bps[uri];
@@ -910,10 +941,10 @@ class ThreadManager {
 		if (promise)
 			return promise;
 
-		const completer = new PromiseCompleter<boolean[]>();
+		const completer = new PromiseCompleter<VMBreakpoint[]>();
 		const result = [];
 		for (const b of breakpoints)
-			result.push(true);
+			result.push(null);
 		completer.resolve(result);
 		return completer.promise;
 	}
@@ -972,7 +1003,7 @@ class ThreadInfo {
 		this.number = num;
 	}
 
-	public setBreakpoints(uri: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<boolean[]> {
+	public setBreakpoints(uri: string, breakpoints: DebugProtocol.SourceBreakpoint[]): Promise<VMBreakpoint[]> {
 		const removeBreakpointPromises = [];
 
 		// Remove all current bps.
@@ -995,9 +1026,9 @@ class ThreadInfo {
 				).then((result: DebuggerResult) => {
 					const vmBp: VMBreakpoint = result.result as VMBreakpoint;
 					this.vmBps[uri].push(vmBp);
-					return true;
+					return vmBp;
 				}).catch((error) => {
-					return false;
+					return null;
 				});
 
 				promises.push(promise);
