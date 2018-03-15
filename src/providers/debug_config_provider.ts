@@ -1,4 +1,5 @@
 import * as path from "path";
+import * as net from "net";
 import { Analytics } from "../analytics";
 import { config } from "../config";
 import { DebugConfigurationProvider, WorkspaceFolder, CancellationToken, DebugConfiguration, ProviderResult, commands, window } from "vscode";
@@ -6,11 +7,15 @@ import { FlutterLaunchRequestArguments, isWin } from "../debug/utils";
 import { ProjectType, Sdks, isFlutterProject } from "../utils";
 import { FlutterDeviceManager } from "../flutter/device_manager";
 import { SdkCommands } from "../commands/sdk";
+import { spawn } from "child_process";
+import { DartDebugSession } from "../debug/dart_debug_impl";
+import { FlutterDebugSession } from "../debug/flutter_debug_impl";
 
 export class DebugConfigProvider implements DebugConfigurationProvider {
 	private sdks: Sdks;
 	private analytics: Analytics;
 	private deviceManager: FlutterDeviceManager;
+	private debugServer: net.Server;
 
 	constructor(sdks: Sdks, analytics: Analytics, deviceManager: FlutterDeviceManager) {
 		this.sdks = sdks;
@@ -42,7 +47,21 @@ export class DebugConfigProvider implements DebugConfigurationProvider {
 			window.showInformationMessage("Set the 'program' value in your launch config (eg ${workspaceRoot}/bin/main.dart) then launch again");
 		}
 
-		return debugConfig;
+		// Start port listener on launch of first debug session.
+		if (!this.debugServer) {
+
+			// Start listening on a random port.
+			this.debugServer = net.createServer((socket) => {
+				const session = new FlutterDebugSession();
+				session.setRunAsServer(true);
+				session.start(socket as NodeJS.ReadableStream, socket);
+			}).listen(0);
+		}
+
+		// Make VS Code connect to debug server instead of launching debug adapter.
+		const c: any = config;
+		c.debugServer = this.debugServer.address().port;
+		return c;
 	}
 
 	private setupDebugConfig(folder: WorkspaceFolder | undefined, debugConfig: FlutterLaunchRequestArguments, isFlutter: boolean, deviceId: string) {
