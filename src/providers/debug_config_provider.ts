@@ -95,4 +95,11 @@ export class DebugConfigProvider implements DebugConfigurationProvider {
 			debugConfig.deviceId = debugConfig.deviceId || deviceId;
 		}
 	}
+
+	public dispose() {
+		if (this.debugServer) {
+			this.debugServer.close();
+			this.debugServer = null;
+		}
+	}
 }
