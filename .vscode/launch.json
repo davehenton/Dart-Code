@@ -16,37 +16,11 @@
 			"preLaunchTask": "npm: watch"
 		},
 		{
-			"name": "Dart Debug Server",
+			"name": "Debug Server",
 			"type": "node",
 			"request": "launch",
 			"cwd": "${workspaceRoot}",
-			"program": "${workspaceRoot}/src/debug/dart_debug_entry.ts",
-			"args": [
-				"--server=4711"
-			],
-			"outFiles": [
-				"${workspaceRoot}/out/src/**/*.js"
-			]
-		},
-		{
-			"name": "Flutter Debug Server",
-			"type": "node",
-			"request": "launch",
-			"cwd": "${workspaceRoot}",
-			"program": "${workspaceRoot}/src/debug/flutter_debug_entry.ts",
-			"args": [
-				"--server=4711"
-			],
-			"outFiles": [
-				"${workspaceRoot}/out/src/**/*.js"
-			]
-		},
-		{
-			"name": "Flutter Test Debug Server",
-			"type": "node",
-			"request": "launch",
-			"cwd": "${workspaceRoot}",
-			"program": "${workspaceRoot}/src/debug/flutter_test_debug_entry.ts",
+			"program": "${workspaceRoot}/src/debug/multi_debug_entry.ts",
 			"args": [
 				"--server=4711"
 			],
@@ -130,24 +104,10 @@
 	],
 	"compounds": [
 		{
-			"name": "Extension + Dart Debug Server",
+			"name": "Extension + Debug Server",
 			"configurations": [
 				"Extension",
-				"Dart Debug Server"
-			]
-		},
-		{
-			"name": "Extension + Flutter Debug Server",
-			"configurations": [
-				"Extension",
-				"Flutter Debug Server"
-			]
-		},
-		{
-			"name": "Extension + Flutter Test Debug Server",
-			"configurations": [
-				"Extension",
-				"Flutter Test Debug Server"
+				"Debug Server"
 			]
 		}
 	]

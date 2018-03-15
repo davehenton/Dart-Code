@@ -22,7 +22,7 @@ import {
 // restartFrameRequest(response: DebugProtocol.RestartFrameResponse, args: DebugProtocol.RestartFrameArguments): void;
 // completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments): void;
 
-export class DartDebugSession extends DebugSession {
+export class DartDebugSession {
 	protected args: DartLaunchRequestArguments;
 	// TODO: Tidy all this up
 	protected sourceFile: string;
@@ -34,27 +34,30 @@ export class DartDebugSession extends DebugSession {
 	private packageMap: PackageMap;
 	private localPackageName: string;
 	protected sendStdOutToConsole: boolean = true;
+	private session: DebugSession;
 
-	public constructor() {
-		super();
+	public constructor(session: DebugSession) {
+		this.session = session;
 
 		this.threadManager = new ThreadManager(this);
+	}
+
+	public sendEvent(evt: DebugProtocol.Event) {
+		this.session.sendEvent(evt);
+	}
+
+	protected sendResponse(resp: DebugProtocol.Response) {
+		this.session.sendResponse(resp);
 	}
 
 	protected initializeRequest(
 		response: DebugProtocol.InitializeResponse,
 		args: DebugProtocol.InitializeRequestArguments,
 	): void {
-		response.body.supportsConfigurationDoneRequest = true;
-		response.body.supportsEvaluateForHovers = true;
-		response.body.exceptionBreakpointFilters = [
-			{ filter: "All", label: "All Exceptions", default: false },
-			{ filter: "Unhandled", label: "Uncaught Exceptions", default: true },
-		];
-		this.sendResponse(response);
+		throw new Error("This is handled by debug_entry");
 	}
 
-	protected launchRequest(response: DebugProtocol.LaunchResponse, args: DartLaunchRequestArguments): void {
+	public launchRequest(response: DebugProtocol.LaunchResponse, args: DartLaunchRequestArguments): void {
 		if (!args || !args.dartPath || !args.program) {
 			this.sendEvent(new OutputEvent("Unable to restart debugging. Please try ending the debug session and starting again."));
 			this.sendEvent(new TerminatedEvent());
@@ -219,16 +222,15 @@ export class DartDebugSession extends DebugSession {
 		});
 	}
 
-	protected disconnectRequest(
+	public disconnectRequest(
 		response: DebugProtocol.DisconnectResponse,
 		args: DebugProtocol.DisconnectArguments,
 	): void {
 		if (this.childProcess != null)
 			this.childProcess.kill();
-		super.disconnectRequest(response, args);
 	}
 
-	protected setBreakPointsRequest(
+	public setBreakPointsRequest(
 		response: DebugProtocol.SetBreakpointsResponse,
 		args: DebugProtocol.SetBreakpointsArguments,
 	): void {
@@ -275,7 +277,7 @@ export class DartDebugSession extends DebugSession {
 		return uris;
 	}
 
-	protected setExceptionBreakPointsRequest(
+	public setExceptionBreakPointsRequest(
 		response: DebugProtocol.SetExceptionBreakpointsResponse,
 		args: DebugProtocol.SetExceptionBreakpointsArguments,
 	): void {
@@ -292,7 +294,7 @@ export class DartDebugSession extends DebugSession {
 		this.sendResponse(response);
 	}
 
-	protected configurationDoneRequest(
+	public configurationDoneRequest(
 		response: DebugProtocol.ConfigurationDoneResponse,
 		args: DebugProtocol.ConfigurationDoneArguments,
 	): void {
@@ -301,7 +303,7 @@ export class DartDebugSession extends DebugSession {
 		this.threadManager.receivedConfigurationDone();
 	}
 
-	protected pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments): void {
+	public pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 
 		if (!thread) {
@@ -314,7 +316,7 @@ export class DartDebugSession extends DebugSession {
 			.catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments): void {
+	public sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments): void {
 		const sourceReference = args.sourceReference;
 		const data = this.threadManager.getStoredData(sourceReference);
 		const scriptRef: VMScriptRef = data.data as VMScriptRef;
@@ -325,12 +327,12 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected threadsRequest(response: DebugProtocol.ThreadsResponse): void {
+	public threadsRequest(response: DebugProtocol.ThreadsResponse): void {
 		response.body = { threads: this.threadManager.getThreads() };
 		this.sendResponse(response);
 	}
 
-	protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
+	public stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 		let startFrame: number = args.startFrame;
 		let levels: number = args.levels;
@@ -419,7 +421,7 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
+	public scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments): void {
 		const frameId = args.frameId;
 		const data = this.threadManager.getStoredData(frameId);
 		const frame: VMFrame = data.data as VMFrame;
@@ -439,7 +441,7 @@ export class DartDebugSession extends DebugSession {
 		this.sendResponse(response);
 	}
 
-	protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
+	public variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments): void {
 		const variablesReference = args.variablesReference;
 
 		// implement paged arrays
@@ -529,7 +531,7 @@ export class DartDebugSession extends DebugSession {
 		}).catch((e) => null);
 	}
 
-	protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments): void {
+	public setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments): void {
 		const variablesReference: number = args.variablesReference;
 		// The name of the variable.
 		const name: string = args.name;
@@ -540,7 +542,7 @@ export class DartDebugSession extends DebugSession {
 		this.errorResponse(response, "not supported");
 	}
 
-	protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
+	public continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 		if (!thread) {
 			this.errorResponse(response, `No thread with id ${args.threadId}`);
@@ -553,7 +555,7 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
+	public nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 		if (!thread) {
 			this.errorResponse(response, `No thread with id ${args.threadId}`);
@@ -566,7 +568,7 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
+	public stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 		if (!thread) {
 			this.errorResponse(response, `No thread with id ${args.threadId}`);
@@ -578,7 +580,7 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
+	public stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments): void {
 		const thread = this.threadManager.getThreadInfoFromNumber(args.threadId);
 		if (!thread) {
 			this.errorResponse(response, `No thread with id ${args.threadId}`);
@@ -590,11 +592,11 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
+	public stepBackRequest(response: DebugProtocol.StepBackResponse, args: DebugProtocol.StepBackArguments): void {
 		// unsupported
 	}
 
-	protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
+	public evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments): void {
 		const expression: string = args.expression;
 		// Stack frame scope; if not specified, the expression is evaluated in the global scope.
 		const frameId: number = args.frameId;
@@ -636,12 +638,8 @@ export class DartDebugSession extends DebugSession {
 		}).catch((error) => this.errorResponse(response, `${error}`));
 	}
 
-	protected customRequest(request: string, response: DebugProtocol.Response, args: any): void {
-		switch (request) {
-			default:
-				super.customRequest(request, response, args);
-				break;
-		}
+	public customRequest(request: string, response: DebugProtocol.Response, args: any): void {
+		super.customRequest(request, response, args);
 	}
 
 	// IsolateStart, IsolateRunnable, IsolateExit, IsolateUpdate, ServiceExtensionAdded

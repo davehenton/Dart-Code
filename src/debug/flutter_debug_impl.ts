@@ -1,6 +1,6 @@
 import * as child_process from "child_process";
 import * as path from "path";
-import { Event, OutputEvent, TerminatedEvent } from "vscode-debugadapter";
+import { Event, OutputEvent, TerminatedEvent, CapabilitiesEvent } from "vscode-debugadapter";
 import { DebugProtocol } from "vscode-debugprotocol";
 import { DartDebugSession } from "./dart_debug_impl";
 import { VMEvent } from "./dart_debug_protocol";
@@ -21,12 +21,11 @@ export class FlutterDebugSession extends DartDebugSession {
 		this.sendStdOutToConsole = false;
 	}
 
-	protected initializeRequest(
-		response: DebugProtocol.InitializeResponse,
-		args: DebugProtocol.InitializeRequestArguments,
-	): void {
-		response.body.supportsRestartRequest = true;
-		super.initializeRequest(response, args);
+	public launchRequest(response: DebugProtocol.LaunchResponse, args: FlutterLaunchRequestArguments): void {
+		this.sendEvent(new CapabilitiesEvent({
+			supportsRestartRequest: true,
+		}));
+		super.launchRequest(response, args);
 	}
 
 	protected spawnProcess(args: FlutterLaunchRequestArguments): any {
@@ -111,7 +110,7 @@ export class FlutterDebugSession extends DartDebugSession {
 		return localPath;
 	}
 
-	protected disconnectRequest(
+	public disconnectRequest(
 		response: DebugProtocol.DisconnectResponse,
 		args: DebugProtocol.DisconnectArguments,
 	): void {
@@ -120,7 +119,7 @@ export class FlutterDebugSession extends DartDebugSession {
 		super.disconnectRequest(response, args);
 	}
 
-	protected restartRequest(
+	public restartRequest(
 		response: DebugProtocol.RestartResponse,
 		args: DebugProtocol.RestartArguments,
 	): void {
@@ -149,7 +148,7 @@ export class FlutterDebugSession extends DartDebugSession {
 			.then(() => this.isReloadInProgress = false);
 	}
 
-	protected customRequest(request: string, response: DebugProtocol.Response, args: any): void {
+	public customRequest(request: string, response: DebugProtocol.Response, args: any): void {
 		switch (request) {
 			case "serviceExtension":
 				if (this.currentRunningAppId)
