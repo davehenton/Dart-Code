@@ -644,7 +644,7 @@
 		"watch": "tsc -watch -p ./",
 		"postinstall": "node ./node_modules/vscode/bin/install",
 		"lint": "tslint src/**/*.ts -t verbose",
-		"test": "rm -rf ./.nyc_output && npm run compile && npm run instrument && npm run test-only && nyc report -r lcov",
+		"test": "rm -rf ./.nyc_output && npm run compile && npm run instrument && npm run test-only && nyc report -r lcovonly --report-dir out/src/coverage",
 		"test-only": "node ./out/test/test_all.js",
 		"instrument": "cd out/src && nyc instrument . . && cd ../..",
 		"post_result_to_chat": "node ./out/tool/post_to_chat.js"

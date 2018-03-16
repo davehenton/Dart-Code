@@ -69,6 +69,6 @@ script:
 
 after_script:
   - cd  out/src;
-  - ../../cc-test-reporter after-build -d --exit-code $TRAVIS_TEST_RESULT;
+  - ../../cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT;
   - cd ../..;
   - npm run post_result_to_chat
