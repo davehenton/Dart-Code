@@ -647,7 +647,6 @@
 		"test": "rm -rf ./.nyc_output && npm run compile && npm run instrument && npm run test-only && nyc report -r lcov",
 		"test-only": "node ./out/test/test_all.js",
 		"instrument": "cd out/src && nyc instrument . . && cd ../..",
-		"send_coverage": "cd out/src && codeclimate-test-reporter < ../../coverage/lcov.info && cd ../..",
 		"post_result_to_chat": "node ./out/tool/post_to_chat.js"
 	},
 	"dependencies": {

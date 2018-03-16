@@ -37,5 +37,4 @@ on_failure:
   - ps: $env:APPVEYOR_RESULT = 1
 
 on_finish:
-  - npm run send_coverage
   - npm run post_result_to_chat

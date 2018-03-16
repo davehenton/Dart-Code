@@ -17,6 +17,7 @@ addons:
     packages:
       - libsecret-1-dev
       - libstdc++6
+      - gcc-4.9
 
 before_install:
   - export TRAVIS_COMMIT_AUTHOR="$(git log -1 $TRAVIS_COMMIT --pretty="%aN")"
@@ -52,11 +53,22 @@ before_install:
 install:
   - npm install --depth 0
 
+before_script:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then
+      curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter;
+      chmod +x ./cc-test-reporter;
+      ./cc-test-reporter before-build;
+    fi
+
 script:
   - npm run vscode:prepublish
   - npm run lint
   - npm test
 
 after_script:
-  - npm run send_coverage
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then
+      cd  out/src;
+      ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT;
+      cd ../..;
+    fi
   - npm run post_result_to_chat
